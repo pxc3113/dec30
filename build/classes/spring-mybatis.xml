@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+	xmlns:p="http://www.springframework.org/schema/p"
+	xmlns:context="http://www.springframework.org/schema/context" 
+	xmlns:tx="http://www.springframework.org/schema/tx"
+	xmlns:aop="http://www.springframework.org/schema/aop"
+	xsi:schemaLocation="
+		http://www.springframework.org/schema/beans
+		http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/context
+		http://www.springframework.org/schema/context/spring-context.xsd
+		http://www.springframework.org/schema/tx
+		http://www.springframework.org/schema/tx/spring-tx.xsd
+		http://www.springframework.org/schema/aop
+        http://www.springframework.org/schema/aop/spring-aop.xsd">
+
+		<!-- 引入属性文件 -->
+	<context:property-placeholder location="classpath:config.properties" />
+	<!-- 注解扫描包 -->
+	<context:component-scan base-package="com.ytc.service" />
+	 <!-- 配置数据源 -->
+	<bean id="dataSource" class="org.springframework.jdbc.datasource.DriverManagerDataSource"> 
+    	<property name="driverClassName">
+    	<value>${driverClassName}</value>
+    	</property> 
+        <property name="url">
+        <value>${jdbc.url}</value>
+        </property> 
+        <property name="username">
+        <value>${jdbc.username}</value>
+        </property> 
+        <property name="password">
+        <value>${jdbc.password}</value>
+        </property> 
+    </bean> 
+
+
+	<!-- myBatis文件 -->
+	<bean id="sqlSessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean">
+		<property name="dataSource" ref="dataSource" />
+		<!-- 自动扫描录mybatis的 xml文件 -->
+		<property name="mapperLocations" value="classpath:com/ytc/mapping/*.xml" />
+	</bean>
+
+	<bean class="org.mybatis.spring.mapper.MapperScannerConfigurer">
+		<property name="basePackage" value="com.ytc.mapper" />
+		<property name="sqlSessionFactoryBeanName" value="sqlSessionFactory" />
+	</bean>
+
+	<!-- 配置事务管理器 -->
+	<bean id="transactionManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+		<property name="dataSource" ref="dataSource" />
+	</bean>
+
+	<!-- 注解方式配置事物 -->
+	<!-- <tx:annotation-driven transaction-manager="transactionManager" /> -->
+
+	<!-- 拦截器方式配置事物 -->
+	<tx:advice id="transactionAdvice" transaction-manager="transactionManager">
+		<tx:attributes>
+			<tx:method name="add*" propagation="REQUIRED" />
+			<tx:method name="save*" propagation="REQUIRED" />
+			<tx:method name="update*" propagation="REQUIRED" />
+			<tx:method name="edit*" propagation="REQUIRED" />
+			<tx:method name="del*" propagation="REQUIRED" />
+			<tx:method name="remove*" propagation="REQUIRED" />
+<!-- 
+		事物传播特性（常用）
+		1. PROPAGATION：REQUIRED: 如果存在一个事务，则支持当前事务。如果没有事务则开启
+        2. PROPAGATION：SUPPORTS: 如果存在一个事务，支持当前事务。如果没有事务，则非事务的执行
+-->
+
+			<tx:method name="*" propagation="SUPPORTS" read-only="true"/>
+		</tx:attributes>
+	</tx:advice>
+	<!-- aop配置 -->
+	<aop:config>
+	<!-- 
+	       第一个* 代表任意的返回值类型
+	       第二个* 代表所有的以Impl结尾的类
+	       第三个* 代表当前这个service实现类中的所有的方法
+	       第一个 ..代表当前service包下的任意包结构       
+	       第二个 ..代表当前这个类中的方法任意的参数
+	 -->
+		<aop:pointcut id="transactionPointcut" expression="execution(* com.ytc.service..*Impl.*(..))" />
+		<aop:advisor pointcut-ref="transactionPointcut" advice-ref="transactionAdvice" />
+	</aop:config>
+
+
+</beans> 

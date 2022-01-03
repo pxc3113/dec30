@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ytc.mapper.CardMapper">
+  <resultMap id="BaseResultMap" type="com.ytc.model.Card">
+    <id column="card_id" property="id" jdbcType="INTEGER" />
+    <result column="card_number" property="number" jdbcType="INTEGER" />
+    <association property="bank" javaType="com.ytc.model.Bank">
+      <id column="bank_id" property="id" jdbcType="VARCHAR" />
+      <result column="bank_name" property="name" jdbcType="VARCHAR" />
+    </association>
+    <association property="user" javaType="com.ytc.model.User">
+      <id column="user_id" property="id" jdbcType="INTEGER" />
+      <result column="user_name" property="name" jdbcType="VARCHAR" />
+    </association>
+  </resultMap>
+
+  <sql id="whereSql">
+    <if test="card.number!=null and card.number!=''">
+      and card_number like '%${card.number}%'
+    </if>
+    <if test="card.bank!=null">
+      <if test="card.bank.id!=-1 and card.bank.id!=null">
+        and banks.bank_id = #{card.bank.id}
+      </if>
+    </if>
+    <if test="card.user!=null">
+      <if test="card.user.name!=null and card.user.name!=''">
+        and user_name like '%${card.user.name}%'
+      </if>
+    </if>
+  </sql>
+
+  <select id="getTotalRows" resultType="int">
+    select count(*) from bank_cards left join banks on bank_cards.bank_id=banks.bank_id left join users on
+    bank_cards.user_id=users.user_id
+    where 1=1
+    <include refid="whereSql"></include>
+  </select>
+  <select id="getAll" resultMap="BaseResultMap">
+    select * from bank_cards left join banks on bank_cards.bank_id=banks.bank_id left join users on
+    bank_cards.user_id=users.user_id
+    where 1=1
+    <include refid="whereSql"></include>
+    limit #{page.from},#{page.pageSize};
+  </select>
+</mapper>
